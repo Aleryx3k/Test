@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Функциональные тесты «нажатий»: берут настоящие модели окон (ViewModels/*.cs, AppState, ViewModelBase)
+    из проекта Wpf как есть и вызывают их команды так, как это делают кнопки. Окна и диалоги Windows
+    заменены заглушками (Stubs/), поэтому тесты идут и на Linux, и на Windows. Результат проверяется по SQLite-базе.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>EquipmentAccounting.FunctionalTests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.5.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\EquipmentAccounting.Infrastructure\EquipmentAccounting.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\EquipmentAccounting.Import.Access\EquipmentAccounting.Import.Access.csproj" />
+  </ItemGroup>
+
+  <!-- Настоящий код окон приложения (без правок) -->
+  <ItemGroup>
+    <Compile Include="..\..\src\EquipmentAccounting.Wpf\ViewModels\**\*.cs" LinkBase="Wpf\ViewModels" />
+    <Compile Include="..\..\src\EquipmentAccounting.Wpf\Common\ViewModelBase.cs" LinkBase="Wpf\Common" />
+    <Compile Include="..\..\src\EquipmentAccounting.Wpf\Common\AppState.cs" LinkBase="Wpf\Common" />
+  </ItemGroup>
+
+  <!-- На Linux Directory.Build.props удаляет не-Windows нативные библиотеки (SQLite, QuestPDF, Skia): возвращаем linux-версии из кэша NuGet. -->
+  <Target Name="RestoreLinuxSqlite" AfterTargets="RemoveNonWindowsNativeRuntimes" Condition="'$(OS)' != 'Windows_NT'">
+    <ItemGroup>
+      <_LinuxSqlite Include="$(NuGetPackageRoot)sqlitepclraw.lib.e_sqlite3\*\runtimes\linux-x64\native\libe_sqlite3.so" />
+      <_LinuxSqlite Include="$(NuGetPackageRoot)questpdf\*\runtimes\linux-x64\native\*.so" />
+      <_LinuxSqlite Include="$(NuGetPackageRoot)skiasharp.nativeassets.linux.nodependencies\*\runtimes\linux-x64\native\*.so" />
+      <_LinuxSqlite Include="$(NuGetPackageRoot)harfbuzzsharp.nativeassets.linux\*\runtimes\linux-x64\native\*.so" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_LinuxSqlite)" DestinationFolder="$(OutDir)runtimes\linux-x64\native" />
+  </Target>
+
+</Project>
